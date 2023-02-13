@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd"><mapper namespace="com.example.springbootdemo.mapper.TransactionMapper">
+    <resultMap id = "resultMapCustomer" type="com.example.springbootdemo.model.CustomerModel">
+        <id column = "customer_id" property = "customerId" />
+        <id column = "wallet_id" property = "walletId" />
+        <id column = "customer_name" property = "customerName" />
+        <id column ="address" property="address"/>
+        <id column = "contact_no" property = "contactNo" />
+    </resultMap>
+
+    <resultMap id = "resultMapDessert" type="com.example.springbootdemo.model.DessertModel">
+        <id column = "dessert_id" property = "dessertId" />
+        <id column = "dessert_name" property = "dessertName" />
+        <id column = "price" property = "price" />
+        <id column="is_available" property="isAvailable"/>
+    </resultMap>
+
+    <resultMap id = "resultMapOrder" type="com.example.springbootdemo.model.OrderModel">
+        <id column = "order_date" property = "orderDate" />
+        <id column = "order_id" property = "orderId" />
+        <id column = "customer_id" property = "customerId" />
+        <id column = "dessert_id" property = "dessertId" />
+        <id column = "quantity" property = "quantity" />
+        <id column = "total_price" property = "totalPrice" />
+        <id column = "is_delivered" property = "isDelivered" />
+    </resultMap>
+
+    <resultMap id = "resultMapOrderHistoryTransaction" type="com.example.springbootdemo.model.OrderTransactionHistoryModel">
+        <id column = "order_id" property = "orderId" />
+        <id column = "order_date" property = "orderDate" />
+        <id column = "customer_name" property = "customerName" />
+        <id column = "dessert_name" property = "dessertName" />
+        <id column = "quantity" property = "quantity" />
+        <id column = "total_price" property = "totalPrice" />
+    </resultMap>
+
+
+    <select id = "queryCustomerById" parameterType="com.example.springbootdemo.model.CustomerModel" resultMap="resultMapCustomer">
+        SELECT
+            customer_id,
+            customer_name,
+            wallet_id
+        FROM customer
+        WHERE customer_id = #{customerId}
+    </select>
+
+
+    <select id = "queryDessertById" parameterType="com.example.springbootdemo.model.DessertModel" resultMap="resultMapDessert">
+        SELECT
+            dessert_id,
+            dessert_name
+        FROM dessert
+        WHERE dessert_id = #{dessertId}
+    </select>
+
+    <select id = "queryDesserts" parameterType="com.example.springbootdemo.model.DessertModel" resultMap="resultMapDessert">
+        SELECT
+            dessert_id,
+            dessert_name,
+            price,
+            is_available
+        FROM dessert
+
+    </select>
+
+    <select id = "queryDessertId" resultType="java.lang.Integer">
+        SELECT
+            dessert_id
+        FROM dessert
+        WHERE dessert_name = #{dessertName}
+    </select>
+
+    <select id = "queryCustomer" resultMap="resultMapCustomer">
+        SELECT
+           customer_id,
+           wallet_id,
+           customer_name,
+           address,
+           contact_no
+        FROM customer
+
+    </select>
+
+    <select id = "queryTotalPrice" resultType="java.lang.Integer">
+        SELECT
+            total_price
+        FROM orders
+        WHERE order_id = #{orderId}
+    </select>
+
+    <select id = "queryDessertPrice" resultType="java.lang.Integer">
+        SELECT
+            price
+        FROM dessert
+        WHERE dessert_id = #{dessertId}
+    </select>
+
+    <select id = "queryOrders" resultMap="resultMapOrder">
+        SELECT
+            order_date,
+            order_id,
+            customer_id,
+            dessert_id,
+            quantity,
+            is_delivered,
+            total_price
+        FROM orders
+
+    </select>
+    <select id = "queryBalance" resultType="java.lang.Integer">
+        SELECT
+            balance
+        FROM wallet
+        WHERE wallet_id = #{walletId};
+    </select>
+
+    <insert id="insertOrder" >
+        INSERT INTO orders(order_id, customer_id, dessert_id, quantity, total_price)
+        VALUES(#{orderId}, #{customerId}, #{dessertId}, #{quantity}, #{totalPrice})
+    </insert>
+    <update id="updateWallet" >
+        UPDATE wallet
+        SET balance = balance - #{totalPrice}
+        WHERE wallet_id = (select wallet_id from customer where customer_id = #{customerId})
+    </update>
+    <update id="updateOrder">
+        UPDATE orders
+        SET is_delivered = 1
+        WHERE customer_id = #{customerId} and
+              dessert_id = #{dessertId}
+    </update>
+
+    <update id="updateBalance">
+        UPDATE wallet
+        SET balance=balance + #{balanceInput}
+        WHERE wallet_id=#{walletId}
+    </update>
+
+    <delete id="deleteOrder">
+        DELETE FROM orders
+        WHERE order_id = #{orderId}
+    </delete>
+
+    <insert id="addWallet" parameterType="com.example.springbootdemo.model.WalletModel" useGeneratedKeys="true" keyProperty="walletId" keyColumn="wallet_id">
+        INSERT INTO wallet (balance)
+        VALUES(#{balance})
+    </insert>
+
+    <insert id="addCustomer" parameterType="com.example.springbootdemo.model.CustomerModel">
+        INSERT INTO customer (wallet_id,customer_name,address,contact_no)
+        VALUES(#{walletId},#{customerName},#{address},#{contactNo})
+    </insert>
+
+<update id ="updateOrderDetails">
+    UPDATE orders
+    <set>
+        <if test= "dessertId != null">
+            dessert_id=#{dessertId},
+        </if>
+        <if test= "quantity != null">
+        quantity=#{quantity},
+        </if>
+        <if test= "totalPrice != null">
+            total_price= #{totalPrice},
+        </if>
+    </set>
+    WHERE order_id = #{orderId}
+</update>
+    <update id = "updateTotalPrice">
+        UPDATE orders
+        SET total_price=#{totalPrice}
+        WHERE order_id =#{orderId}
+    </update>
+
+<insert id="addDessert" parameterType="com.example.springbootdemo.model.DessertModel" useGeneratedKeys="true" keyProperty="dessertId" keyColumn="dessert_id">
+    INSERT INTO dessert (dessert_name,price,is_available)
+    VALUES (#{dessertName}, #{price}, #{isAvailable})
+</insert>
+
+<select id = "queryTransactionHistory" resultMap="resultMapOrderHistoryTransaction">
+        SELECT
+            order_id,
+            customer_name,
+            dessert_name,
+            order_date,
+            quantity,
+            total_price
+        FROM customer
+        INNER JOIN ORDERS ON customer.customer_id = orders.customer_id
+        INNER JOIN dessert ON dessert.dessert_id = orders.dessert_id
+
+</select>
+
+
+</mapper>
